@@ -105,6 +105,7 @@ resource "azurerm_linux_virtual_machine" "mtc-vm" {
   network_interface_ids = [
     azurerm_network_interface.mtc-nic.id,
   ]
+  custom_data = filebase64("customdata.tpl")
 
   admin_ssh_key {
     username   = "adminuser"
@@ -121,5 +122,18 @@ resource "azurerm_linux_virtual_machine" "mtc-vm" {
     offer     = "0001-com-ubuntu-server-jammy"
     sku       = "22_04-lts"
     version   = "latest"
+  }
+
+  provisioner "local-exec" {
+    command = templatefile("windows-ssh-script.tpl", {
+      hostname     = self.public_ip_address,
+      user         = "adminuser",
+      identityfile = "~/.ssh/mtcazurekey"
+    })
+    interpreter = ["Powershell", "-Command"]
+  }
+
+  tags = {
+    environment = "dev"
   }
 }
